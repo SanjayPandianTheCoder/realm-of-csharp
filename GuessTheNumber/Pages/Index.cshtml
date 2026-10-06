@@ -1,0 +1,106 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Guess The Number";
+
+    var state = Model.currentState;
+    var hasGame = state.randomNumber != 0;
+    var won = state.isNumberGuessed;
+}
+
+<div class="min-h-[80vh] flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 space-y-6">
+
+        <h1 class="text-3xl font-extrabold text-center text-indigo-600">Guess The Number</h1>
+
+        @* ---------- SCREEN 3: WIN RESULT (shown above the start form) ---------- *@
+        @if (won)
+        {
+            <div class="rounded-xl bg-green-50 border border-green-200 p-5 text-center space-y-1">
+                <p class="text-2xl font-bold text-green-700">🎉 Well done, @state.name!</p>
+                <p class="text-gray-700">
+                    The number was <span class="font-bold">@state.randomNumber</span>.
+                </p>
+                <p class="text-gray-700">
+                    Guesses: <span class="font-bold">@state.noOfGuesses</span>
+                    &middot; Score: <span class="font-bold">@state.score</span>
+                </p>
+            </div>
+        }
+
+        @* ---------- SCREEN 1: START FORM (no game yet, or game finished) ---------- *@
+        @if (!hasGame || won)
+        {
+            <form method="post" asp-page-handler="GameStart" class="space-y-4">
+                <div>
+                    <label for="game-name" class="block text-sm font-medium text-gray-700 mb-1">Enter your name</label>
+                    <input type="text" asp-for="gameStart.name" id="game-name" required
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+
+                <div>
+                    <label for="game-difficulty" class="block text-sm font-medium text-gray-700 mb-1">Select difficulty</label>
+                    <select asp-for="gameStart.difficulty" id="game-difficulty" required
+                            class="w-full rounded-lg border border-gray-300 px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="easy">Easy (1 - 50)</option>
+                        <option value="intermediate">Intermediate (1 - 100)</option>
+                        <option value="hard">Hard (1 - 500)</option>
+                    </select>
+                </div>
+
+                <button type="submit"
+                        class="w-full rounded-lg bg-indigo-600 py-2.5 font-semibold text-white hover:bg-indigo-700 transition">
+                    @(won ? "Play Again" : "Start Game")
+                </button>
+            </form>
+        }
+
+        @* ---------- SCREEN 2: GUESSING (game running, not won) ---------- *@
+        @if (hasGame && !won)
+        {
+            <div class="text-center space-y-1">
+                <p class="text-gray-600">
+                    Hi <span class="font-semibold text-gray-900">@state.name</span>,
+                    I'm thinking of a number between
+                    <span class="font-semibold">1</span> and <span class="font-semibold">@state.range</span>.
+                </p>
+                <span class="inline-block rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                    @state.difficulty
+                </span>
+            </div>
+
+            <form method="post" asp-page-handler="SubmitGuess" class="space-y-4">
+                <div>
+                    <label for="game-guess" class="block text-sm font-medium text-gray-700 mb-1">Enter your guess</label>
+                    <input id="game-guess" asp-for="Guess" type="number" min="1" max="@state.range" required
+                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-center text-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <button type="submit"
+                        class="w-full rounded-lg bg-indigo-600 py-2.5 font-semibold text-white hover:bg-indigo-700 transition">
+                    Guess
+                </button>
+            </form>
+        }
+
+        @* ---------- GUESS HISTORY (shown whenever there are guesses) ---------- *@
+        @if (state.guessesList?.Any() == true)
+        {
+            <div class="border-t pt-4">
+                <p class="text-sm font-medium text-gray-700 mb-2">
+                    Your guesses (@state.noOfGuesses)
+                </p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var g in state.guessesList)
+                    {
+                        var correct = won && g == state.randomNumber;
+                        <span class="rounded-full px-3 py-1 text-sm font-medium @(correct ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700")">
+                            @g
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script src="https://cdn.tailwindcss.com"></script>
