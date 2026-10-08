@@ -19,11 +19,13 @@ namespace GuessTheNumber.Pages
         [BindProperty]
         public int Guess { get; set; }
 
-        public IndexModel(ILogger<IndexModel> logger)
+        private IWebHostEnvironment _env;
+        public IndexModel(ILogger<IndexModel> logger, IWebHostEnvironment env)
         {
             _logger = logger;
             levels = ["easy", "intermediate", "hard"];
             ranges = [50, 100, 500];
+            _env = env;
         }
 
         public void OnGet()
@@ -82,7 +84,7 @@ namespace GuessTheNumber.Pages
             HttpContext.Session.SetString("CurrentState", serializedCurrentState);
 
             Console.WriteLine(JsonSerializer.Serialize(currentState));
-
+            saveScore();
             return Page();
 
         }
@@ -90,6 +92,36 @@ namespace GuessTheNumber.Pages
         private int getRandomRumber(int uptoRange)
         {
             return Random.Shared.Next(1, uptoRange + 1);
+        }
+
+        private async void saveScore()
+        {
+            var currentPath = Path.Combine(_env.ContentRootPath, "Files", "scorecard.json");
+            var fileContent = await System.IO.File.ReadAllTextAsync(currentPath);
+
+            var scorecards = new List<CurrentState>();
+            if(fileContent != "")
+            {
+                scorecards = JsonSerializer.Deserialize<List<CurrentState>>(fileContent) ?? new List<CurrentState>();
+            }
+
+            var existingScoreCard = scorecards.FirstOrDefault(x => x.id == currentState.id);
+            if(existingScoreCard != null)
+            {
+                existingScoreCard.guessesList = currentState.guessesList;
+                existingScoreCard.noOfGuesses = currentState.noOfGuesses;
+                existingScoreCard.isNumberGuessed = currentState.isNumberGuessed;
+                existingScoreCard.score = currentState.score;
+            }
+
+            else
+            {
+                scorecards.Add(currentState);
+            }
+            
+            var serializedScoreCard = JsonSerializer.Serialize(scorecards);
+            await System.IO.File.WriteAllTextAsync(currentPath, serializedScoreCard);
+
         }
     }
 }
